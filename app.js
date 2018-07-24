@@ -1,128 +1,64 @@
-var restify = require('restify');
-var builder = require('botbuilder');
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-var Connect = 'Connect';
-var Upload = 'Show uploaded attachment';
-var External = 'Show Internet attachment';
-var Options = [Connect, Upload, External];
+const { BotFrameworkAdapter, MessageFactory, CardFactory } = require('botbuilder');
+const restify = require('restify');
 
-var inMemoryStorage = new builder.MemoryBotStorage();
-
-// Setup Restify Server
-var server = restify.createServer();
+// Create server
+let server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function () {
-   console.log('%s listening to %s', server.name, server.url); 
+    console.log(`${server.name} listening to ${server.url}`);
 });
 
-// Create chat connector for communicating with the Bot Framework Service
-var connector = new builder.ChatConnector({
+// Create adapter
+const adapter = new BotFrameworkAdapter({
     appId: process.env.MicrosoftAppId,
     appPassword: process.env.MicrosoftAppPassword
 });
 
-// Listen for messages from users 
-server.post('/api/messages', connector.listen());
+// Responds to the incoming message by either sending a hero card, an image, 
+// or echoing the user's message.
 
-// Receive messages from the user and respond by echoing each message back (prefixed with 'You said:')
-var bot = new builder.UniversalBot(connector, function (session) {
-    var message = session.message;
-    var conversationId = message.address.conversation.id;
-});
-	
+// Listen for incoming requests 
+server.post('/api/messages', (req, res) => {
+    // Route received request to adapter for processing
+    adapter.processActivity(req, res, (context) => {
+        if (context.activity.type === 'message') {
+            const text = (context.activity.text || '').trim().toLowerCase()
 
-var bot = new builder.UniversalBot(connector, [
-    function (session) {
-        session.send('Welcome, here you can see attachment alternatives:');
-        builder.Prompts.choice(session, 'What sample option would you like to see?', Options, {
-            maxRetries: 3
-        });
-    },
-    function (session, results) {
-        var option = results.response ? results.response.entity : Inline;
-        switch (option) {
-            case Connect:
-                return connect();
-            case Upload:
-                return;
-            case External:
-                return;
+            switch(text){
+                case 'hi':
+                case "hello":
+                case "help":
+                    // Send the user an instruction message.
+                    return context.sendActivity("Welcome to the Bot to showcase the DirectLine API. " +
+                    "Send \"Show me a hero card\" or \"Send me a BotFramework image\" to see how the " +
+                    "DirectLine client supports custom channel data. Any other message will be echoed.");
+                    break;
+
+                case 'show me a hero card':
+                    // Create the hero card.
+                    const message = MessageFactory.attachment(
+                        CardFactory.heroCard(   
+                        'Sample Hero Card', //cards title
+                        'Displayed in the DirectLine client' //cards text
+                        )
+                    );
+                    return context.sendActivity(message);
+                    break;
+                    
+                case 'send me a botframework image':
+                    // Create the image attachment.
+                    const imageOrVideoMessage = MessageFactory.contentUrl('https://docs.microsoft.com/en-us/azure/bot-service/media/how-it-works/architecture-resize.png', 'image/png')
+                    return context.sendActivity(imageOrVideoMessage);
+                    break;
+                
+                default:
+                    // No command was encountered. Echo the user's message.
+                    return context.sendActivity(`You said ${context.activity.text}`);
+                    break;
+                    
+            }
         }
- }]).set('storage', inMemoryStorage); // Register in memory storage
- 
- function connect() {
-	"use strict";
-	var serverName = 'HC-06';	
-
-	var util = require('util');
-	var DeviceINQ = require("./node_modules/bluetooth-serial-port/lib/device-inquiry.js").DeviceINQ;
-	var BluetoothSerialPort = require("./node_modules/bluetooth-serial-port/lib/bluetooth-serial-port.js").BluetoothSerialPort;
-	var serial = new BluetoothSerialPort();
-	const MAX_MSGS_SENT = 10;
-	var keepScanning = false;
-
-	serial.on('found', function (address, name) {
-		console.log('Found: ' + address + ' with name ' + name);
-
-		serial.findSerialPortChannel(address, function(channel) {
-			console.log('Found RFCOMM channel for serial port on ' + name + ': ' + channel);
-
-			if (name !== serverName) return;
-
-			console.log('Attempting to connect...');
-
-			serial.connect(address, channel, function() {
-		keepScanning  = false;
-			let packetsSent = 0;
-				console.log('Connected. Sending data...');
-				let buf = new Buffer('f');
-				console.log('Size of buf = ' + buf.length);
-
-		serial.on('failure', function(err){
-			console.log('Something wrong happened!!: err = ' + err);
-		});
-
-				serial.on('data', function(buffer) {
-					console.log('Received: Size of data buf = ' + buffer.length);
-					console.log(buffer.toString('utf-8'));
-			serial.write(buf, function(err,count){
-						if(err){
-							console.log('Error received: ' + err);
-				return;
-					}
-					
-			console.log('Sent: Bytes written: ' + count);
-			packetsSent++;
-			console.log('Sent: count = ' + packetsSent);
-			if(packetsSent == MAX_MSGS_SENT){
-				console.log('' + MAX_MSGS_SENT + ' sent!. Closing connection');
-				serial.close();
-				process.exit(0);
-			}
-			});
-				});
-
-				serial.write(buf, function(err, count) {
-					if (err) {
-						console.log('Error received: ' + err);
-					} else {
-						console.log('Bytes writen is: ' + count);
-					}
-				});
-			});
-		});
-	});
-
-	serial.on('close', function() {
-		console.log('connection has been closed (remotely?)');
-	});
-
-	serial.on('finished', function() {
-		console.log('Scan finished.');
-	if(keepScanning == true){
-		console.log('Rescanning..');
-		serial.inquire();
-	}
-	});
-
-	serial.inquire();
-}
+    });
+});
