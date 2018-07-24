@@ -25,41 +25,5 @@ server.post('/api/messages', connector.listen());
 
 // Receive messages from the user and respond by echoing each message back (prefixed with 'You said:')
 var bot = new builder.UniversalBot(connector, function (session) {
-    if (session.message && session.message.value) {
-        processSubmitAction(session, session.message.value);
-        return;
-	}
-
-	var msg = new builder.Message(session)
-    .text("What command would you like to send?")
-    .suggestedActions(
-        builder.SuggestedActions.create(
-                session, [
-                    builder.CardAction.imBack(session, "START", "Connect"),
-                    builder.CardAction.imBack(session, "FORWARDS", "Move Forwards"),
-                    builder.CardAction.imBack(session, "STOP", "Stop")
-                ]
-            ));
-	session.send(msg);
-
-}).set('storage', inMemoryStorage); // Register in memory storage
-
-bot.dialog('connect-car', require('./connect-car'));
-
-// log any bot errors into the console
-bot.on('error', function (e) {
-    console.log('And error ocurred', e);
+    session.send("You said: %s", session.message.text);
 });
-
-function processSubmitAction(session, value) {
-    var defaultErrorMessage = 'Not a command';
-    switch (value.type) {
-        case 'connect':
-            session.send('Roboteams: connect');
-            break;
-
-        default:
-            // A form data was received, invalid or incomplete since the previous validation did not pass
-            session.send(defaultErrorMessage);
-    }
-}
