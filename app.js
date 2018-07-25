@@ -44,7 +44,7 @@ var bot = new builder.UniversalBot(connector, function (session) {
 
 }).set('storage', inMemoryStorage); // Register in memory storage
 
-bot.dialog('connect-car', require('./connect-car'));
+//bot.dialog('connect-car', require('./connect-car'));
 
 // log any bot errors into the console
 bot.on('error', function (e) {
