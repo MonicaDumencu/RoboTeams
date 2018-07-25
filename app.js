@@ -51,6 +51,14 @@ let state = State.START;
 let name = null;
 // Receive messages from the user and respond by echoing each message back (prefixed with 'You said:')
 let bot = new builder.UniversalBot(connector, function (session) {
+  var conversationId = session.message.address.conversation.id;
+
+  var userName = session.userData[conversationId];
+  if (!userName) {
+    session.message.text = "";
+    session.userData[conversationId] = conversationId;
+  }
+
   const message = session.message.text;
   if (message.indexOf("NAME") > -1) {
     state = State.NAME;
