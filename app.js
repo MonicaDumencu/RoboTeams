@@ -1,12 +1,21 @@
 let restify = require('restify');
 let builder = require('botbuilder');
+var azure = require('botbuilder-azure');
+
+var documentDbOptions = {
+  host: 'https://roboteams.documents.azure.com:443/',
+  masterKey: 'j4ueEYQvlxCBmZyqSZkXpIBnj13W9DdFgpWqnGJo2KUokLYSexXOVBFFUW92b75ip47ahxOmt4b27Mad3wk8pw==',
+  database: 'botdocs',
+  collection: 'botdata'
+};
+
+var docDbClient = new azure.DocumentDbClient(documentDbOptions);
+var cosmosStorage = new azure.AzureBotStorage({ gzipData: false }, docDbClient);
 
 let Connect = 'Connect';
 let Upload = 'Show uploaded attachment';
 let External = 'Show Internet attachment';
 let Options = [Connect, Upload, External];
-
-let inMemoryStorage = new builder.MemoryBotStorage();
 
 // Setup Restify Server
 let server = restify.createServer();
@@ -67,4 +76,4 @@ let bot = new builder.UniversalBot(connector, function (session) {
      session.send("Invalid command. \"You must specify the name of the device first")
     }
   }
-});
+}).set('storage', cosmosStorage);
