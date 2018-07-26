@@ -32,7 +32,7 @@ let connector = new builder.ChatConnector({
 // Listen for messages from users 
 server.post('/api/messages', connector.listen());
 
-const commands = ['STRAIGHT', 'LEFT', 'RIGHT', 'BACK', 'STOP'];
+const commands = ['STRAIGHT', 'LEFT', 'RIGHT', 'BACK', 'STOP', 'DISCONNECT', 'DANCE', 'AVOID'];
 let gsession;
 
 const State = {
@@ -103,7 +103,6 @@ let bot = new builder.UniversalBot(connector, function (session) {
   if (!currentUserName) {
     session.message.text = "";
     session.userData[conversationId] = conversationId;
-    console.log('THIS IS SPARTAAAA: ' + conversationId);
   }
 
   const message = session.message.text;
